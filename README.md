@@ -6,7 +6,6 @@
 ![SQLFluff](https://img.shields.io/badge/SQLFluff-Linting-purple)
 ![CI/CD](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-black?logo=githubactions)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
-![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 ---
 

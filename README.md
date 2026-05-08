@@ -1,105 +1,157 @@
-# 🧪 MLOps Docker ETL Project – PostgreSQL + Python + SQL CI/CD
+# Data Pipeline ETL — Python · PostgreSQL · Docker · GitHub Actions
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Data-blue?logo=postgresql)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue?logo=postgresql)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-blue?logo=docker)
-![CI/CD](https://img.shields.io/badge/GitHub_Actions-AutoTest-green?logo=github)
+![SQLFluff](https://img.shields.io/badge/SQLFluff-Linting-purple)
+![CI/CD](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-black?logo=githubactions)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 ---
 
-## 🚀 Overview
+## What This Project Does
 
-This repository demonstrates a **lightweight ETL project** using **Python, PostgreSQL, and Docker** with built-in **CI/CD for SQL validation** via GitHub Actions (`sqlfluff`).
+Lightweight but production-structured ETL pipeline: generates synthetic sales data with Faker, transforms it in Python, loads into PostgreSQL — all containerized with Docker and validated via automated SQL linting on every push.
 
-✔ Loads raw sales data → transforms it → stores in PostgreSQL  
-✔ Run clean SQL queries from `/sql/dql/`  
-✔ SQL linting automatically triggered on push/pull  
+**Pipeline:** `Faker → sales.csv → ETL (Python) → PostgreSQL → SQL Analytics → CI/CD (SQLFluff)`
 
----
-
-## 📁 Project Structure
-
-```
-mlops_docker_project/
-│
-├── .conda/                      # Conda environment (optional)
-│   └── environment.yaml
-│
-├── data/
-│   ├── raw/                     # Raw CSV input (sales.csv)
-│   │   └── sales.csv
-│   └── processed/               # Optional processed output
-│
-├── scripts/                     # Python scripts
-│   ├── etl.py                   # ETL logic (extract → transform → load)
-│   └── generate_data.py         # Generates sample sales data using Faker
-│   └── clean_sql_files.py       # Auto-clean SQL files to pass linting
-├── sql/
-│   └── dql/                     # SQL queries for analysis
-│       ├── daily_sales_trend.sql
-│       ├── discount_impact.sql
-│       ├── sales_by_region.sql
-│       ├── top_categories.sql
-│       └── weekly_sales_trend.sql
-│
-├── .github/workflows/
-│   └── sql-lint.yaml            # GitHub Actions config for SQL linting
-│
-├── docker-compose.yaml          # PostgreSQL + Python setup
-├── Dockerfile                   # Python Docker image for ETL
-├── .env                         # DB connection credentials
-├── requirements.txt             # Python dependencies
-└── README.md                    # Project documentation
-```
-## 🧠 ETL Pipeline
-
-- ✅ **Extract** – Read raw CSV (`sales.csv`)
-- ✅ **Transform** – Calculate total revenue using price, quantity, discount
-- ✅ **Load** – Write into PostgreSQL table `sales`
+**What makes it stand out:** SQLFluff linting runs automatically on every push via GitHub Actions — SQL formatting is enforced the same way code style is in real engineering teams.
 
 ---
 
-## 📊 SQL Query Examples (in `sql/dql/`)
+## ETL Flow
 
-- `top_categories.sql` → 🏆 Revenue + order count by category  
-- `sales_by_region.sql` → 🌍 Regional breakdown  
-- `discount_impact.sql` → 🔻 Impact of discounts  
-- `daily_sales_trend.sql` → 📅 Orders & revenue by day  
-- `weekly_sales_trend.sql` → 📈 Weekly performance trend  
-
-✔️ These queries are ready to plug into **Tableau, Power BI**, or any BI dashboard
+```
+generate_data.py  →  sales.csv  →  etl.py  →  PostgreSQL (sales table)
+                                                      ↓
+                                              sql/dql/ queries
+                                                      ↓
+                                         GitHub Actions (sqlfluff lint)
+```
 
 ---
 
-## ✅ CI/CD – SQL Linting with GitHub Actions
+## SQL Queries — From the Repo
 
-✔️GitHub Actions automatically runs sqlfluff on every push and pull request:
+### Top 5 Categories by Revenue
 
+```sql
+SELECT
+    category,
+    COUNT(*)                        AS total_orders,
+    ROUND(SUM(total)::numeric, 2)  AS revenue
+FROM sales
+GROUP BY category
+ORDER BY revenue DESC
+LIMIT 5;
 ```
+
+### Weekly Sales Trend
+
+```sql
+SELECT
+    DATE_TRUNC('week', date::date)  AS week_start,
+    COUNT(*)                         AS total_orders,
+    ROUND(SUM(total)::numeric, 2)   AS total_revenue
+FROM sales
+GROUP BY week_start
+ORDER BY week_start;
+```
+
+### CTE + Window Function: Category Revenue Ranking
+
+```sql
+WITH category_revenue AS (
+    SELECT
+        category,
+        COUNT(*)                        AS total_orders,
+        ROUND(SUM(total)::numeric, 2)  AS revenue
+    FROM sales
+    GROUP BY category
+)
+SELECT
+    category,
+    total_orders,
+    revenue,
+    RANK() OVER (ORDER BY revenue DESC)              AS rank,
+    ROUND(revenue / SUM(revenue) OVER () * 100, 1)  AS pct_of_total
+FROM category_revenue
+ORDER BY rank;
+```
+
+---
+
+## CI/CD — SQL Linting with SQLFluff
+
+Every push and pull request triggers:
+
+```bash
 sqlfluff lint sql/dql --dialect postgres
 ```
-Ensures your SQL queries are always clean and consistent. ✨
 
-📦 Run Locally (Docker)
-1. Build and start containers
+SQL formatting is automatically validated — same engineering standard used in production data teams.
+
+---
+
+## Project Structure
+
 ```
+data-pipeline-etl-project/
+├── scripts/
+│   ├── etl.py                # Extract → Transform → Load
+│   ├── generate_data.py      # Synthetic sales data (Faker)
+│   └── clean_sql_files.py    # Auto-fix SQL formatting
+├── sql/
+│   └── dql/
+│       ├── top_categories.sql
+│       ├── sales_by_region.sql
+│       ├── discount_impact.sql
+│       ├── daily_sales_trend.sql
+│       └── weekly_sales_trend.sql
+├── data/
+│   └── raw/sales.csv
+├── .github/workflows/
+│   └── sql-lint.yaml         # SQLFluff CI/CD workflow
+├── docker-compose.yaml
+├── Dockerfile
+└── requirements.txt
+```
+
+---
+
+## How to Run
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/evgeniimatveev/data-pipeline-etl-project.git
+cd data-pipeline-etl-project
+
+# 2. Start containers and run ETL
 docker-compose up --build
-```
-2. ETL script will run automatically
-```
-# You’ll see: ✅ Data successfully loaded into the 'sales' table.
-```
----
+# Output: Data successfully loaded into the 'sales' table.
 
-# 📢 Stay Connected!  
-💻 **GitHub Repository:** [Evgenii Matveev](https://github.com/evgeniimatveev)  
-🌐 **Portfolio:** [Data Science Portfolio](https://www.datascienceportfol.io/evgeniimatveevusa)  
-📌 **LinkedIn:** [Evgenii Matveev](https://www.linkedin.com/in/evgenii-matveev-510926276/)  
-
+# 3. Run SQL queries in DBeaver or psql
+# Connect to localhost:5432, database: sales_db
+```
 
 ---
 
-🔥 **If you like this project, don't forget to star ⭐ the repository!** 🔥
+## Stack
 
+| Layer | Technology |
+|-------|-----------|
+| Data Generation | Python (Faker) |
+| ETL Logic | Python (pandas, psycopg2) |
+| Database | PostgreSQL |
+| Containerization | Docker + Docker Compose |
+| SQL Quality | SQLFluff (automated linting) |
+| CI/CD | GitHub Actions |
+
+---
+
+## Connect
+
+- GitHub: [evgeniimatveev](https://github.com/evgeniimatveev)
+- Portfolio: [datascienceportfol.io/evgeniimatveevusa](https://www.datascienceportfol.io/evgeniimatveevusa)
+- LinkedIn: [Evgenii Matveev](https://www.linkedin.com/in/evgenii-matveev-510926276/)

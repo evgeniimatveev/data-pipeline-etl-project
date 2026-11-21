@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: elt_test
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 31031987
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (copy .env.example)}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:

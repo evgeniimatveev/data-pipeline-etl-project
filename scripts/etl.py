@@ -17,7 +17,7 @@ db = os.getenv("POSTGRES_DB")
 url = f"postgresql://{user}:{password}@{db_host}:5432/{db}"
 
 engine = create_engine(url)
-print(f"Connecting to → {url}")
+print(f"Connecting to → {engine.url.render_as_string(hide_password=True)}")
 
 # 1. Extract
 df = pd.read_csv("data/raw/sales.csv")

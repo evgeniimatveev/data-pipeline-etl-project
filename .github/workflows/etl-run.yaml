@@ -1,0 +1,46 @@
+name: ETL run (manual)
+
+# Manual only: click "Run workflow" in the Actions tab. No push / PR / schedule triggers.
+# Runs the whole stack from the README (PostgreSQL + ETL in Docker Compose) with a throw-away password,
+# then checks that every CSV row arrived in the database and that the password never reaches the log.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Create .env from the template with a random password
+        run: |
+          cp .env.example .env
+          PW="$(openssl rand -hex 12)"
+          echo "::add-mask::$PW"
+          sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$PW/; s/^ENV_MODE=.*/ENV_MODE=docker/" .env
+          echo "PW=$PW" >> "$GITHUB_ENV"
+          docker compose config -q
+      - name: Start PostgreSQL and wait until it accepts connections
+        run: |
+          docker compose up -d postgres
+          for i in $(seq 1 30); do docker compose exec -T postgres pg_isready -U postgres -d elt_test && exit 0; sleep 2; done
+          docker compose logs postgres; exit 1
+      - name: Run the ETL container
+        run: docker compose up --build --no-deps --exit-code-from etl etl 2>&1 | tee /tmp/etl.log
+      - name: Every CSV row is in the sales table
+        run: |
+          csv_rows=$(( $(wc -l < data/raw/sales.csv) - 1 ))
+          db_rows=$(docker compose exec -T postgres psql -U postgres -d elt_test -At -c "SELECT COUNT(*) FROM sales")
+          echo "CSV rows: $csv_rows | table rows: $db_rows"
+          test "$csv_rows" = "$db_rows"
+      - name: The password never appears in the ETL log
+        run: |
+          grep -q "Connecting to" /tmp/etl.log
+          ! grep -qF "$PW" /tmp/etl.log
+          echo "log is clean:"; grep "Connecting to" /tmp/etl.log
+      - name: Stop
+        if: always()
+        run: docker compose down -v

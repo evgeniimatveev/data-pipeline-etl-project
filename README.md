@@ -114,6 +114,8 @@ data-pipeline-etl-project/
 │   └── sql-lint.yaml         # SQLFluff CI/CD workflow
 ├── docker-compose.yaml
 ├── Dockerfile
+├── .env.example              # copy to .env and set a password
+├── .gitignore
 └── requirements.txt
 ```
 
@@ -126,12 +128,15 @@ data-pipeline-etl-project/
 git clone https://github.com/evgeniimatveev/data-pipeline-etl-project.git
 cd data-pipeline-etl-project
 
-# 2. Start containers and run ETL
+# 2. Create your local settings (the real .env is never committed)
+cp .env.example .env      # then set POSTGRES_PASSWORD in .env
+
+# 3. Start containers and run ETL
 docker-compose up --build
 # Output: Data successfully loaded into the 'sales' table.
 
-# 3. Run SQL queries in DBeaver or psql
-# Connect to localhost:5432, database: sales_db
+# 4. Run SQL queries in DBeaver or psql
+# Connect to localhost:5432, database: elt_test, table: sales
 ```
 
 ---

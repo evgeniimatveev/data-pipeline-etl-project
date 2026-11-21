@@ -5,8 +5,6 @@ name: ETL run (manual)
 # then checks that every CSV row arrived in the database and that the password never reaches the log.
 on:
   workflow_dispatch:
-  push:
-    branches: [security/remove-committed-secrets]   # TEMPORARY: to test before merge
 
 permissions:
   contents: read
